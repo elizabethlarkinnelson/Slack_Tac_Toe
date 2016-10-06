@@ -10,7 +10,7 @@ board = [1, 2, 3]
 def display_board(board):
     """Board is an array of tuples e.g. (2, "O") """
 
-    one = " "
+    one = "1"
     two = " "
     three = " "
 

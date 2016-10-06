@@ -12,6 +12,24 @@ def list_channels():
     return None
 
 
+def list_users():
+    user_list = slack_client.api_call("users.list")
+    if user_list.get("ok"):
+        return user_list["members"]
+
+
+def print_users():
+    members = list_users()
+
+    users = []
+
+    if members:
+        for member in members:
+            users.append(member["name"])
+
+    return users
+
+
 if __name__ == "__main__":
     channels = list_channels()
     if channels:
@@ -19,4 +37,4 @@ if __name__ == "__main__":
         for c in channels:
             print c['name'] + " ( " + c['id'] + ")"
     else:
-        print("Unable to authenticate.")
+        print "hi"

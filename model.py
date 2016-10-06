@@ -13,7 +13,20 @@ class UserMove(db.Model):
 
     user__move_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    move = db.Column(db.Integer, unique=True, nullable=False)
+    move = db.Column(db.Integer, unique=True, nullable=True)
+
+    @classmethod
+    def create_game(cls, user1, user2):
+        """Starting a new game by adding user to database"""
+
+        new_user1 = cls(username=user1)
+        new_user2 = cls(username=user2)
+
+        db.session.add(new_user1)
+        db.session.add(new_user2)
+        db.session.commit()
+
+        return
 
     @classmethod
     def move_made(cls, move):
