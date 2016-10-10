@@ -14,14 +14,14 @@ def play_game(input, channel, user):
     """Utilizes input from slack channel to process game play"""
 
     if input[0] == 'play':
-        if Channel.query_channel_game is True:
+        if len(input) == 1:
+            message = """You need to tag someone to play! \n
+                        type:  '/ttt play @an_awesome_person' """
+            return send_message(channel, message)
+        elif Channel.query_channel_game is True:
             #Querying channel to see if game in plan
             message = """Sorry game in play!
                         type: " '/ttt board' to show the board! """
-            return send_message(channel, message)
-        elif input[1] is None:
-            message = """You need to tag someone to play! \n
-                        type:  '/ttt play @an_awesome_person' """
             return send_message(channel, message)
         else:
             Channel.link_game_channel(channel, user, input[1])
@@ -48,14 +48,20 @@ def play_game(input, channel, user):
                 return send_message(channel, message)
             else:
                 Move.create_move(channel, user, input[1])
-                game_over = Move.game(channel, user)
+                game_over = Move.game_over(channel, user)
                 if game_over[0] is True:
                     message = "Congrats " + game_over[1] + "! You won!"
+                    Move.clear_game(channel)
                     return send_message(channel, message)
                 else:
-                    message = "Your turn:" + Move.whose_turn(channel)
-                    return send_message(channel, display_board(channel)),
-                    send_message(channel, message)
+                    if Move.board_full(channel):
+                        message = "Cat's game! Try again."
+                        Move.clear_game(channel)
+                        return send_message(channel, message)
+                    else:
+                        message = "Your turn:" + Move.whose_turn(channel)
+                        return send_message(channel, display_board(channel)),
+                        send_message(channel, message)
 
     return
 

@@ -166,6 +166,24 @@ class Move(db.Model):
             return False
 
     @classmethod
+    def board_full(cls, channel):
+        channel_id = Channel.get_channel_id(channel)
+        game_id = Game.get_game_id(channel_id)
+        users = User.get_game_users(game_id)
+
+        all_moves = []
+
+        for user in users:
+            moves = Move.query.filter(Move.user_id == user.user_id).all()
+            for move in moves:
+                all_moves.append(move.board_space)
+
+        if sorted(all_moves) == [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+            return True
+
+        return False
+
+    @classmethod
     def create_user_character(cls, channel):
         channel_id = Channel.get_channel_id(channel)
         game_id = Game.get_game_id(channel_id)
@@ -232,13 +250,13 @@ class Move(db.Model):
 
         moves = sorted(all_moves)
 
-        if moves != ([1, 2, 3] or [1, 4, 7] or
+        if moves == ([1, 2, 3] or [1, 4, 7] or
                      [1, 5, 9] or [7, 8, 9] or
                      [4, 5, 6] or [3, 6, 9] or
                      [2, 5, 8] or [3, 5, 7]):
             return [True, Move.whose_turn(channel)]
 
-        return False
+        return [False]
 
     @classmethod
     def clear_game(cls, channel):
@@ -250,6 +268,19 @@ class Move(db.Model):
         db.session.delete(channel)
 
         game = Game.query.get(game_id)
+        db.session.delete(game)
+
+        for user in users:
+            user_id = user.user_id
+            user_moves = Move.query.filter(Move.user_id == user_id).all()
+            for move in user_moves:
+                db.session.delete(move)
+            old_user = User.query.get(user_id)
+            db.session.delete(old_user)
+
+        db.session.commit()
+
+        return
 
 
 
