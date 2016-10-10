@@ -6,76 +6,157 @@ db = SQLAlchemy()
 
 ##############################################################################
 
-class UserMove(db.Model):
-    """User and user's move for current game"""
 
-    __tablename__ = "user_move"
+class Game(db.Model):
+    """Games in play, one per channel"""
 
-    user__move_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    move = db.Column(db.Integer, unique=True, nullable=True)
+    __tablename__ = "games"
+
+    game_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channels.channel_id'))
+
+    channel = db.relationship('Channel', backref='channels')
 
     @classmethod
-    def create_game(cls, user1, user2):
-        """Starting a new game by adding user to database"""
+    def create_game(cls, channel_id, user1, user2):
+        """Creates new game, users in db"""
 
-        new_user1 = cls(username=user1)
-        new_user2 = cls(username=user2)
+        new_game = cls(channel_id=channel_id)
 
-        db.session.add(new_user1)
-        db.session.add(new_user2)
+        db.session.add(new_game)
         db.session.commit()
 
-        return
+        #Query db for newly created channel to game id, create users
+        #attached to this params
+
+        game = cls.query.filter(cls.channel_id == channel_id).first()
+
+        User.create_user(game.game_id, user1)
+        User.create_user(game.game_id, user2)
 
     @classmethod
-    def move_made(cls, move):
-        """Querying db to see if move already made"""
+    def get_game_id(cls, channel_id):
 
-        if cls.query.filter(cls.move == move).first() is not None:
-            return True
-        return False
-
-    @classmethod
-    def game_on(cls):
-        """Querying db to see if game in progress"""
-
-        if cls.query.first() is not None:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def query_board(cls):
-        board_array = []
-
-        if cls.query.first() is not None:
-            user_one_username = cls.query.first().username
-        else:
-            return False
-
-        if cls.query.filter(cls.username != user_one_username).first() is not None:
-            user_two_username = cls.query.filter(cls.username != user_one_username).first().username
-        else:
-            return False
-
-        user_one_moves = cls.query.filter(cls.username == user_one_username).all()
-        for each_move in user_one_moves:
-            one_move = (each_move.move, 'X')
-            board_array.append(one_move)
-
-        user_two_moves = cls.query.filter(cls.username == user_two_username).all()
-        for user_move in user_two_moves:
-            single_move = (user_move.move, 'O')
-            board_array.append(single_move)
-
-        return board_array
+        game_info = cls.query.filter(cls.channel_id == channel_id).first()
+        return game_info.game_id
 
     def __repr__(self):
 
-        return "<user_move_id=%s username=%s move=%s>" % (self.user_move_id,
-                                                        self.username,
-                                                        self.move)
+        return "<game_id=%s channel_id=%s>" % (self.game_id, self.channel_id)
+
+
+class Channel(db.Model):
+    """Channels in play"""
+
+    __tablename__ = "channels"
+
+    channel_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    channel_name = db.Column(db.String(50), unique=True, nullable=False)
+    user_one = db.Column(db.String(25), nullable=False)
+    user_two = db.Column(db.String(25), nullable=False)
+
+    @classmethod
+    def link_game_channel(cls, channel, user1, user2):
+        #First function to be called when creating a new game
+        new_channel_game = cls(channel_name=channel, user_one=user1, user_two=user2)
+        db.session.add(new_channel_game)
+        db.session.commit()
+
+        #Call create game function which:
+        #1)Creates game to channel relationship
+        #2)Creates a user profile in db for each user in game
+        channel_db = cls.query.filter(cls.channel_name == channel).first()
+        Game.create_game(channel_db.channel_id, user1, user2)
+
+    @classmethod
+    def query_channel_game(cls, channel):
+        """Returns true if game in play, false if not"""
+
+        if cls.query.filter(cls.channel_name == channel).first() is not None:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def get_channel_id(cls, channel):
+        """Returns channel id"""
+        channel_info = cls.query.filter(cls.channel_name == channel).first()
+        return channel_info.channel_id
+
+    def __repr__(self):
+
+        return "<channel_id=%s, channel_name=%s, user_one=%s, user_two=%s" % (
+            self.channel_id, self.channel_name, self.user_one, self.user_two)
+
+
+class User(db.Model):
+
+    __tablename__ = "users"
+
+    user_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.game_id'))
+    user_name = db.Column(db.String(25), nullable=False)
+
+    game = db.relationship('Game', backref='users')
+
+    @classmethod
+    def create_user(cls, game_id, user_name):
+        new_user = cls(game_id=game_id, user_name=user_name)
+        db.session.add(new_user)
+        db.session.commit()
+
+    @classmethod
+    def get_game_users(cls, game_id):
+        game_users = cls.query.filter(cls.game_id == game_id).all()
+        return game_users
+
+    def __repr__(self):
+
+        return "<user_id=%s, game_id=%s, user_name=%s>" % (
+            self.user_id, self.game_id, self.user_name)
+
+
+class Move(db.Model):
+
+    __tablename__ = "moves"
+
+    move_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    board_space = db.Column(db.Integer, nullable=False)
+    character = db.Column(db.String(1), nullable=False)
+
+    user = db.relationship('User', backref='moves')
+
+    def __repr__(self):
+
+        return "<move_id=%s, user_id=%s, board_space=%s, char=%s>" % (
+            self.move_id, self.user_id, self.board_space, self.character)
+
+    @classmethod
+    def query_board_moves(cls, channel):
+        channel_id = Channel.get_channel_id(channel)
+        game_id = Game.get_game_id(channel_id)
+        users = User.get_game_users(game_id)
+
+        current_plays = []
+
+        for user in users:
+            if cls.query.filter(cls.user_id == user.user_id).first() is None:
+                continue
+            else:
+                moves = cls.query.filter(cls.user_id == user.user_id).all()
+                for move in moves:
+                    current_plays.append((move.board_space, move.character))
+
+        return current_plays
+
+
+
+
+
+
+
+
 
 ##############################################################################
 def init_app():
