@@ -110,6 +110,11 @@ class User(db.Model):
         game_users = cls.query.filter(cls.game_id == game_id).all()
         return game_users
 
+    @classmethod
+    def get_user_id(cls, user_name):
+        user_info = cls.query.filter(cls.user_name == user_name).first()
+        return user_info.user_id
+
     def __repr__(self):
 
         return "<user_id=%s, game_id=%s, user_name=%s>" % (
@@ -150,7 +155,101 @@ class Move(db.Model):
 
         return current_plays
 
+    @classmethod
+    def move_made(cls, guess, channel):
+        current_plays = cls.query_board_moves(channel)
 
+        for play in current_plays:
+            if play[0] == guess:
+                return True
+        else:
+            return False
+
+    @classmethod
+    def create_user_character(cls, channel):
+        channel_id = Channel.get_channel_id(channel)
+        game_id = Game.get_game_id(channel_id)
+        users = User.get_game_users(game_id)
+
+        user_char = []
+
+        for user in users:
+            if cls.query.filter(cls.user_id == user.user_id).first() is not None:
+                user_move = Move.query.filter(cls.user_id == user.user_id).first()
+                user_char.append((user.user_id, user_move.character))
+
+        if not user_char:
+            user_char.append((users[0].user_id, 'X'))
+
+        elif len(user_char) == 1:
+            user_char.append((users[1].user_id, 'O'))
+
+        return user_char
+
+    @classmethod
+    def create_move(cls, channel, user, board_space):
+
+        user_characters = Move.create_user_character(channel)
+
+        user_id = User.get_user_id(user)
+
+        my_char = []
+
+        for character in user_characters:
+            if character[0] == user_id:
+                my_char.append(character[1])
+
+        new_move = cls(user_id=user_id, board_space=board_space, character=my_char[0])
+        db.session.add(new_move)
+        db.session.commit()
+
+        return
+
+    @classmethod
+    def whose_turn(cls, channel):
+        channel_id = Channel.get_channel_id(channel)
+        game_id = Game.get_game_id(channel_id)
+        users = User.get_game_users(game_id)
+
+        user1_count = cls.query.filter(cls.user_id == users[0].user_id).count()
+        user2_count = cls.query.filter(cls.user_id == users[1].user_id).count()
+
+        if user1_count > user2_count:
+            return users[1].user_name
+
+        else:
+            return users[0].user_name
+
+    @classmethod
+    def game_over(cls, channel, user):
+        user_id = User.get_user_id(user)
+        user_moves = cls.query.filter(cls.user_id == user_id).all()
+
+        all_moves = []
+
+        for move in user_moves:
+            all_moves.append(move.board_space)
+
+        moves = sorted(all_moves)
+
+        if moves != ([1, 2, 3] or [1, 4, 7] or
+                     [1, 5, 9] or [7, 8, 9] or
+                     [4, 5, 6] or [3, 6, 9] or
+                     [2, 5, 8] or [3, 5, 7]):
+            return [True, Move.whose_turn(channel)]
+
+        return False
+
+    @classmethod
+    def clear_game(cls, channel):
+        channel_id = Channel.get_channel_id(channel)
+        game_id = Game.get_game_id(channel_id)
+        users = User.get_game_users(game_id)
+
+        channel = Channel.query.get(channel_id)
+        db.session.delete(channel)
+
+        game = Game.query.get(game_id)
 
 
 
