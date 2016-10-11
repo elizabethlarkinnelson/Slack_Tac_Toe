@@ -147,7 +147,7 @@ class Move(db.Model):
 
         for user in users:
             if cls.query.filter(cls.user_id == user.user_id).first() is None:
-                continue
+                pass
             else:
                 moves = cls.query.filter(cls.user_id == user.user_id).all()
                 for move in moves:
@@ -188,36 +188,31 @@ class Move(db.Model):
         channel_id = Channel.get_channel_id(channel)
         game_id = Game.get_game_id(channel_id)
         users = User.get_game_users(game_id)
-
-        user_char = []
+        moves = []
 
         for user in users:
-            if cls.query.filter(cls.user_id == user.user_id).first() is not None:
-                user_move = Move.query.filter(cls.user_id == user.user_id).first()
-                user_char.append((user.user_id, user_move.character))
+            if Move.query.filter(Move.user_id == user.user_id).first() is not None:
+                moves.append("_")
 
-        if not user_char:
-            user_char.append((users[0].user_id, 'X'))
-
-        elif len(user_char) == 1:
-            user_char.append((users[1].user_id, 'O'))
-
-        return user_char
+        if not moves:
+            return "X"
+        else:
+            return "O"
 
     @classmethod
     def create_move(cls, channel, user, board_space):
 
-        user_characters = Move.create_user_character(channel)
-
         user_id = User.get_user_id(user)
 
-        my_char = []
+        my_char = ""
 
-        for character in user_characters:
-            if character[0] == user_id:
-                my_char.append(character[1])
+        if Move.query.filter(Move.user_id == user_id).first() is None:
+            my_char = Move.create_user_character(channel)
+        else:
+            first_move = Move.query.filter(Move.user_id == user_id).first()
+            my_char = first_move.character
 
-        new_move = cls(user_id=user_id, board_space=board_space, character=my_char[0])
+        new_move = cls(user_id=user_id, board_space=board_space, character=my_char)
         db.session.add(new_move)
         db.session.commit()
 
@@ -245,15 +240,20 @@ class Move(db.Model):
 
         all_moves = []
 
+        print "\n\n\n\n\n\n I'm CHECKING!"
+
         for move in user_moves:
             all_moves.append(move.board_space)
 
         moves = sorted(all_moves)
 
-        if moves == ([1, 2, 3] or [1, 4, 7] or
-                     [1, 5, 9] or [7, 8, 9] or
-                     [4, 5, 6] or [3, 6, 9] or
-                     [2, 5, 8] or [3, 5, 7]):
+        if (moves == [1, 2, 3] or moves == [1, 4, 7] or
+            moves == [1, 5, 9] or moves == [7, 8, 9] or
+            moves == [4, 5, 6] or moves == [3, 6, 9] or
+            moves == [2, 5, 8] or moves == [3, 5, 7]
+            ):
+
+            print "\n\n\n\n\n\n I'm True!"
             return [True, Move.whose_turn(channel)]
 
         return [False]

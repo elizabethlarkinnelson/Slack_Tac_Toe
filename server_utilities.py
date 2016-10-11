@@ -16,20 +16,18 @@ def play_game(input, channel, user):
     if input[0] == 'play':
         if len(input) == 1:
             message = """You need to tag someone to play! \n
-                        type:  '/ttt play @an_awesome_person' """
+                        TYPE:  '/ttt play @an_awesome_person' """
             return send_message(channel, message)
         elif Channel.query_channel_game is True:
             #Querying channel to see if game in plan
             message = """Sorry game in play!
-                        type: " '/ttt board' to show the board! """
+                        TYPE:" '/ttt board' to show the board! """
             return send_message(channel, message)
         else:
             Channel.link_game_channel(channel, user, input[1])
             message = """Time to play! \n
-                         From left to right, top to bottom
-                         the spaces are numbers 1-9
-                         type: '/ttt move (then your number)''
-                         to make a move!"""
+            From left to right, top to bottom the spaces are numbers 1-9
+            TYPE: '/ttt move (then your number)' to make a move!"""
             return send_message(channel, message)
 
     elif input[0] == 'board':
@@ -48,20 +46,19 @@ def play_game(input, channel, user):
                 return send_message(channel, message)
             else:
                 Move.create_move(channel, user, input[1])
-                game_over = Move.game_over(channel, user)
-                if game_over[0] is True:
-                    message = "Congrats " + game_over[1] + "! You won!"
+                is_game_over = Move.game_over(channel, user)
+                if (is_game_over[0] is True):
                     Move.clear_game(channel)
-                    return send_message(channel, message)
+                    return send_message(channel, "Yay, you won!")
                 else:
-                    if Move.board_full(channel):
+                    if (Move.board_full(channel) is True):
                         message = "Cat's game! Try again."
                         Move.clear_game(channel)
                         return send_message(channel, message)
                     else:
-                        message = "Your turn:" + Move.whose_turn(channel)
-                        return send_message(channel, display_board(channel)),
-                        send_message(channel, message)
+                        message = "Your turn: " + Move.whose_turn(channel)
+                        send_message(channel, display_board(channel))
+                        return send_message(channel, message)
 
     return
 
@@ -89,8 +86,8 @@ def display_board(channel):
     else:
         for num in numbers:
             if num in moves_listed:
-                moves_listed.remove(num)
-                cb.append(moves_listed[0])
+                cb.append(moves_listed[1])
+                moves_listed = moves_listed[2:]
             else:
                 cb.append("   ")
 
