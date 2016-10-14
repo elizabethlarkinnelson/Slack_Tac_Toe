@@ -10,6 +10,7 @@ from model import connect_to_db
 app = Flask(__name__)
 
 app.secret_key = "ABC"
+SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "ABC")
 
 SLACK_WEBHOOK_SECRET = os.environ.get('SLACK_WEBHOOK_SECRET')
 
