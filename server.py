@@ -1,7 +1,7 @@
 import os
 from server_utilities import send_message, play_game
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, Exception
 
 from model import connect_to_db
 
@@ -57,6 +57,11 @@ def inbound():
     return Response(), 200
 
 
+@app.route("/error")
+def error():
+    raise Exception("Error!")
+
+
 @app.route('/', methods=['GET'])
 def test():
     return Response('It works!')
@@ -65,5 +70,6 @@ if __name__ == "__main__":
 
     app.debug = True
     connect_to_db(app)
+    DEBUG = "NO_DEBUG" not in os.environ
     PORT = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=PORT)
+    app.run(host="0.0.0.0", port=PORT, debug=DEBUG)
