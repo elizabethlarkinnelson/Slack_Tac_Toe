@@ -41,7 +41,7 @@ def play_game(input, channel, user):
             if Move.whose_turn(channel) != user:
                 message = "Not your turn!"
                 return send_message(channel, message)
-            elif Move.move_made(input[1], channel):
+            elif Move.move_made(input[1], channel) is True:
                 message = "Move already made!"
                 return send_message(channel, message)
             else:
