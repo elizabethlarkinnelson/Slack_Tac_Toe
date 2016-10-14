@@ -1,7 +1,7 @@
 import os
 from server_utilities import send_message, play_game
 
-from flask import Flask, request, Response, Exception
+from flask import Flask, request, Response
 
 from model import connect_to_db
 
@@ -56,11 +56,6 @@ def inbound():
         #     send_message(channel, "Sorry not a valid response. Try again!")
 
     return Response(), 200
-
-
-@app.route("/error")
-def error():
-    raise Exception("Error!")
 
 
 @app.route('/', methods=['GET'])
