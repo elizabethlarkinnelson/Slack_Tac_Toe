@@ -8,7 +8,7 @@ Werkzeug==0.11.11
 argparse==1.2.1
 backports.ssl-match-hostname==3.5.0.1
 blinker==1.4
-certifi==2016.9.26
+certifi==2022.12.7
 cffi==1.8.3
 click==6.6
 cryptography==1.5.2
